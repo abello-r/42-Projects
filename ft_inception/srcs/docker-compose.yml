@@ -1,0 +1,69 @@
+version: "3.0"
+
+services:
+        mariadb:
+                build:
+                        context: ./requeriments/mariadb/
+                        args:
+                            - MYSQL_USER
+                            - MYSQL_ROOT_PASSWORD
+                            - MYSQL_PASSWORD
+                            - MYSQL_DATABASE
+                volumes:
+                      - db_vol:/var/lib/mysql
+                restart: always
+                expose:
+                     - "3306"
+                networks:
+                        - honeycomb
+                hostname: mariadb
+         
+        wordpress:
+                 build:
+                        context: ./requeriments/wordpress/
+                        args:
+                            - DB_NAME
+                            - DB_USER
+                            - DB_PASSWORD
+                 volumes:
+                        - wp_vol:/var/www/html/wordpress
+                 restart: always
+                 expose:
+                         - "9000"
+                 networks:
+                         - honeycomb
+                 hostname: wordpress
+                 depends_on:
+                         - mariadb
+        
+        nginx:
+                build:
+                        context: .
+                        dockerfile: ./requeriments/nginx/Dockerfile
+                restart: always
+                ports:
+                     - "443:443"
+                networks:
+                        - honeycomb
+                hostname: nginx
+                depends_on:
+                        - wordpress
+                volumes:
+                        - wp_vol:/var/www/html/wordpress
+
+volumes:
+        wp_vol:
+                driver: local
+                driver_opts:
+                        o: bind
+                        type: none
+                        device: /home/$USER/data/wp_vol
+        db_vol:
+                driver: local
+                driver_opts:
+                        o: bind
+                        type: none
+                        device: /home/$USER/data/db_vol
+
+networks:
+        honeycomb:
